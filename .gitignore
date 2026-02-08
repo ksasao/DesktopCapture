@@ -52,5 +52,5 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-/src/.vs/DesktopCapture.slnx/FileContentIndex
-/src/.vs
+.vs/DesktopCapture.slnx/FileContentIndex
+.vs
