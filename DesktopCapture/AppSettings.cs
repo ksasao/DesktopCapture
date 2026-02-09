@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 
 namespace DesktopCapture
 {
@@ -12,6 +13,7 @@ namespace DesktopCapture
         public int ImageFormat { get; set; } = 0; // 0: PNG, 1: JPEG
         public bool CopyToClipboard { get; set; } = true;
         public CaptureRegionSettings? CaptureRegion { get; set; }
+        public string FileNameTemplate { get; set; } = "cap_{yyyyMMdd_HHmmss}_{###}";
         
         // ウィンドウ位置とサイズ
         public double? WindowLeft { get; set; }
@@ -90,6 +92,49 @@ namespace DesktopCapture
                 // 保存エラーをログに出力
                 System.Diagnostics.Debug.WriteLine($"設定ファイル保存エラー: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// テンプレートから実際のファイルパスを生成
+        /// </summary>
+        public string GenerateFileName(int captureCount, string extension)
+        {
+            string template = string.IsNullOrEmpty(FileNameTemplate) 
+                ? "cap_{yyyyMMdd_HHmmss}_{###}" 
+                : FileNameTemplate;
+
+            // 中括弧 {} 内のパターンのみを処理
+            string result = System.Text.RegularExpressions.Regex.Replace(template, @"\{([^}]+)\}", match =>
+            {
+                string pattern = match.Groups[1].Value;
+                
+                // カウンター（#の連続）の場合
+                if (pattern.All(c => c == '#'))
+                {
+                    int hashCount = pattern.Length;
+                    string counterFormat = new string('0', hashCount);
+                    return captureCount.ToString(counterFormat);
+                }
+                
+                // 日付時刻パターンの場合
+                try
+                {
+                    return DateTime.Now.ToString(pattern);
+                }
+                catch
+                {
+                    // 無効なフォーマットの場合はそのまま返す
+                    return match.Value;
+                }
+            });
+
+            // 拡張子を追加（テンプレートに含まれていない場合）
+            if (!result.EndsWith($".{extension}", StringComparison.OrdinalIgnoreCase))
+            {
+                result += $".{extension}";
+            }
+
+            return result;
         }
     }
 

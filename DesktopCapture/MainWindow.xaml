@@ -32,13 +32,25 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="保存先:" VerticalAlignment="Center" Width="60"/>
-                    <TextBox Name="SavePathTextBox" Width="316" Margin="5,0"/>
+                    <TextBox Name="SavePathTextBox" Width="320" Margin="5,0"/>
                     <Button Name="BrowseButton" Content="参照" 
                             Click="BrowseButton_Click" Padding="10,5" Margin="5,0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <TextBlock Text="ファイル名:" VerticalAlignment="Center" Width="60"/>
+                    <TextBox Name="FileNameTemplateTextBox" Width="320" Margin="5,0"
+                             TextChanged="FileNameTemplateTextBox_TextChanged"
+                             LostFocus="FileNameTemplateTextBox_LostFocus"
+                             ToolTip="ファイル名のテンプレート（例: cap_{yyyyMMdd_HHmmss}_{###}）"/>
+                    <Button Name="TemplateHelpButton" Content="?" 
+                            Click="TemplateHelpButton_Click" 
+                            Width="30" Height="25" Margin="5,0"
+                            FontWeight="Bold"
+                            ToolTip="テンプレートの書き方を表示"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="形式:" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox Name="FormatComboBox" Width="100" SelectedIndex="0"
+                    <ComboBox Name="FormatComboBox" Width="100" Margin="5,0" SelectedIndex="0"
                               SelectionChanged="FormatComboBox_SelectionChanged">
                         <ComboBoxItem Content="PNG"/>
                         <ComboBoxItem Content="JPEG"/>

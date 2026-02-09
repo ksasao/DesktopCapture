@@ -69,7 +69,7 @@ namespace DesktopCapture
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             if (version != null)
             {
-                Title = $"デスクトップキャプチャ - {version.Major}.{version.Minor}.{version.Build}";
+                Title = $"デスクトップキャプチャ - v{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
             }
         }
 
@@ -102,6 +102,16 @@ namespace DesktopCapture
                                   $"W:{_captureRegion.Width}, H:{_captureRegion.Height}";
                 CaptureButton.IsEnabled = true;
                 StatusText.Text = "前回の設定を復元しました。キャプチャボタンまたはCtrl+Shift+Cでキャプチャできます。";
+            }
+
+            // ファイル名テンプレートを復元（空の場合はデフォルト値）
+            if (string.IsNullOrWhiteSpace(_settings.FileNameTemplate))
+            {
+                FileNameTemplateTextBox.Text = "cap_{yyyyMMdd_HHmmss}_{###}";
+            }
+            else
+            {
+                FileNameTemplateTextBox.Text = _settings.FileNameTemplate;
             }
         }
 
@@ -190,6 +200,11 @@ namespace DesktopCapture
             _settings.SavePath = SavePathTextBox.Text;
             _settings.ImageFormat = FormatComboBox.SelectedIndex;
             _settings.CopyToClipboard = CopyToClipboardCheckBox.IsChecked ?? true;
+            
+            // ファイル名テンプレート（空の場合はデフォルト値）
+            _settings.FileNameTemplate = string.IsNullOrWhiteSpace(FileNameTemplateTextBox.Text) 
+                ? "cap_{yyyyMMdd_HHmmss}_{###}" 
+                : FileNameTemplateTextBox.Text;
 
             if (_isRegionSet)
             {
@@ -338,13 +353,16 @@ namespace DesktopCapture
 
                     // ファイル名を生成
                     _captureCount++;
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     string extension = FormatComboBox.SelectedIndex == 0 ? "png" : "jpg";
-                    string fileName = $"cap_{timestamp}_{_captureCount:D3}.{extension}";
+                    string fileName = _settings.GenerateFileName(_captureCount, extension);
                     string fullPath = System.IO.Path.Combine(SavePathTextBox.Text, fileName);
 
-                    // ディレクトリが存在しない場合は作成
-                    Directory.CreateDirectory(SavePathTextBox.Text);
+                    // ディレクトリが存在しない場合は作成（テンプレートにサブディレクトリが含まれる場合に対応）
+                    string? directory = System.IO.Path.GetDirectoryName(fullPath);
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
 
                     // 画像を保存
                     ImageFormat format = FormatComboBox.SelectedIndex == 0 
@@ -477,6 +495,42 @@ namespace DesktopCapture
             // ウィンドウを閉じる前に設定を保存
             SaveSettings();
             base.OnClosing(e);
+        }
+
+        private void FileNameTemplateTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // ファイル名テンプレート変更時に設定を保存
+            if (_settings != null)
+            {
+                SaveSettings();
+            }
+        }
+
+        private void FileNameTemplateTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // テキストボックスが空の場合、デフォルト値を設定
+            if (string.IsNullOrWhiteSpace(FileNameTemplateTextBox.Text))
+            {
+                FileNameTemplateTextBox.Text = "cap_{yyyyMMdd_HHmmss}_{###}";
+                StatusText.Text = "ファイル名テンプレートにデフォルト値を設定しました。";
+            }
+        }
+
+        private void TemplateHelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var helpWindow = new TemplateHelpWindow
+            {
+                Owner = this
+            };
+            
+            helpWindow.ShowDialog();
+            
+            // ヘルプウィンドウで選択されたテンプレートがあれば、テキストボックスに設定
+            if (!string.IsNullOrEmpty(helpWindow.SelectedTemplate))
+            {
+                FileNameTemplateTextBox.Text = helpWindow.SelectedTemplate;
+                StatusText.Text = "テンプレートを設定しました。";
+            }
         }
     }
 }

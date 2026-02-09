@@ -1,0 +1,179 @@
+﻿<Window x:Class="DesktopCapture.TemplateHelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ファイル名テンプレートのヘルプ" 
+        Height="600" Width="550" 
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 説明 -->
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontSize="13">
+            ファイル名テンプレートでは、日付・時刻の書式やカウンターを使用できます。
+            <LineBreak/>
+            テンプレート例をクリックすると、クリップボードにコピーされます。
+        </TextBlock>
+
+        <!-- 日付・時刻の書式 -->
+        <GroupBox Header="日付・時刻の書式" Grid.Row="1" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">yyyy</Run> : 年（4桁）　<Run FontWeight="Bold">yy</Run> : 年（2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">MM</Run> : 月（2桁）　<Run FontWeight="Bold">M</Run> : 月（1-2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">dd</Run> : 日（2桁）　<Run FontWeight="Bold">d</Run> : 日（1-2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">HH</Run> : 時（24時間、2桁）　<Run FontWeight="Bold">H</Run> : 時（24時間、1-2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">mm</Run> : 分（2桁）　<Run FontWeight="Bold">m</Run> : 分（1-2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,3">
+                    <Run FontWeight="Bold">ss</Run> : 秒（2桁）　<Run FontWeight="Bold">s</Run> : 秒（1-2桁）
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Margin="0,8,0,3" Foreground="DarkGreen">
+                    <Run FontWeight="Bold">###</Run> : 連番（#の数で桁数指定）
+                </TextBlock>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- テンプレート例 -->
+        <GroupBox Header="テンプレート例（クリックでコピー）" Grid.Row="2" Margin="0,0,0,10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="5">
+                    <!-- 例1 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand" 
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="cap_{yyyyMMdd_HHmmss}_{###}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                cap_{yyyyMMdd_HHmmss}_{###}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: cap_20260209_143055_001.png
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 例2 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand"
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="screenshot_{yyyy}/{MM}/{dd}/{HHmmss}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                screenshot_{yyyy}/{MM}/{dd}/{HHmmss}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: screenshot_2026/02/09/143055.png
+                            </TextBlock>
+                            <TextBlock FontSize="10" Foreground="OrangeRed" Margin="0,2,0,0">
+                                ※ サブディレクトリも自動作成されます
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 例3 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand"
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="image_{yyyy-MM-dd}_{##}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                image_{yyyy-MM-dd}_{##}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: image_2026-02-09_01.png
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 例4 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand"
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="{}{yyyyMMdd_HHmmss}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                {yyyyMMdd_HHmmss}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: 20260209_143055.png
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 例5 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand"
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="capture_{yyyy-MM-dd}_{HH-mm-ss}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                capture_{yyyy-MM-dd}_{HH-mm-ss}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: capture_2026-02-09_14-30-55.png
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 例6 -->
+                    <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,3" 
+                            Background="White" Cursor="Hand"
+                            MouseEnter="TemplateExample_MouseEnter"
+                            MouseLeave="TemplateExample_MouseLeave"
+                            MouseLeftButtonDown="TemplateExample_Click"
+                            Tag="img_{####}">
+                        <StackPanel Margin="8">
+                            <TextBlock FontFamily="Consolas" FontWeight="Bold" FontSize="13" Foreground="DarkBlue">
+                                img_{####}
+                            </TextBlock>
+                            <TextBlock FontSize="11" Foreground="Gray" Margin="0,2,0,0">
+                                例: img_0001.png
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </GroupBox>
+
+        <!-- ステータスと閉じるボタン -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Name="StatusTextBlock" Grid.Column="0" 
+                      VerticalAlignment="Center" 
+                      FontSize="12" Foreground="Green"/>
+
+            <Button Grid.Column="1" Content="閉じる" 
+                    Click="CloseButton_Click" 
+                    Padding="20,8" MinWidth="80"/>
+        </Grid>
+    </Grid>
+</Window>
