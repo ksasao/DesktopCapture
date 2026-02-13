@@ -85,7 +85,33 @@ namespace DesktopCapture
                 SavePathTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
             }
 
-            // 画像形式を復元
+            // ファイル名テンプレートを決定（空の場合はデフォルト値）
+            string currentTemplate = string.IsNullOrWhiteSpace(_settings.FileNameTemplate)
+                ? "cap_{yyyyMMdd_HHmmss}_{###}"
+                : _settings.FileNameTemplate;
+
+            // ファイル名履歴を復元（現在のテンプレートが含まれていない場合は先頭に追加）
+            FileNameTemplateComboBox.Items.Clear();
+            
+            // 現在のテンプレートが履歴に含まれているか確認
+            bool currentTemplateInHistory = _settings.FileNameHistory.Contains(currentTemplate);
+            
+            // 現在のテンプレートを先頭に追加（履歴になければ）
+            if (!currentTemplateInHistory && !string.IsNullOrWhiteSpace(currentTemplate))
+            {
+                FileNameTemplateComboBox.Items.Add(currentTemplate);
+            }
+            
+            // 履歴を追加
+            foreach (var history in _settings.FileNameHistory)
+            {
+                FileNameTemplateComboBox.Items.Add(history);
+            }
+
+            // 現在のテンプレートを設定
+            FileNameTemplateComboBox.Text = currentTemplate;
+
+            // 画像形式を復元（この時点でファイル名が設定されているので上書きされない）
             FormatComboBox.SelectedIndex = _settings.ImageFormat;
 
             // クリップボードコピー設定を復元
@@ -103,16 +129,6 @@ namespace DesktopCapture
                 CaptureButton.IsEnabled = true;
                 StatusText.Text = "前回の設定を復元しました。キャプチャボタンまたはCtrl+Shift+Cでキャプチャできます。";
             }
-
-            // ファイル名テンプレートを復元（空の場合はデフォルト値）
-            if (string.IsNullOrWhiteSpace(_settings.FileNameTemplate))
-            {
-                FileNameTemplateTextBox.Text = "cap_{yyyyMMdd_HHmmss}_{###}";
-            }
-            else
-            {
-                FileNameTemplateTextBox.Text = _settings.FileNameTemplate;
-            }
         }
 
         private void LoadWindowPosition()
@@ -122,15 +138,12 @@ namespace DesktopCapture
             {
                 Width = _settings.WindowWidth.Value;
                 Height = _settings.WindowHeight.Value;
-                System.Diagnostics.Debug.WriteLine($"ウィンドウサイズ復元: {Width}x{Height}");
             }
 
             if (_settings.WindowLeft.HasValue && _settings.WindowTop.HasValue)
             {
                 double left = _settings.WindowLeft.Value;
                 double top = _settings.WindowTop.Value;
-
-                System.Diagnostics.Debug.WriteLine($"設定値: Left={left}, Top={top}");
 
                 // デスクトップの作業領域を取得
                 double screenWidth = SystemParameters.VirtualScreenWidth;
@@ -162,7 +175,6 @@ namespace DesktopCapture
 
                 Left = left;
                 Top = top;
-                System.Diagnostics.Debug.WriteLine($"ウィンドウ位置復元: Left={Left}, Top={Top}");
             }
         }
 
@@ -181,16 +193,7 @@ namespace DesktopCapture
                     _settings.WindowTop = Top;
                     _settings.WindowWidth = Width;
                     _settings.WindowHeight = Height;
-                    System.Diagnostics.Debug.WriteLine($"ウィンドウ位置保存: Left={Left}, Top={Top}, Width={Width}, Height={Height}");
                 }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"無効な値のため保存スキップ: Left={Left}, Top={Top}, Width={Width}, Height={Height}");
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"ウィンドウ状態が Normal ではないため保存スキップ: {WindowState}");
             }
         }
 
@@ -202,9 +205,9 @@ namespace DesktopCapture
             _settings.CopyToClipboard = CopyToClipboardCheckBox.IsChecked ?? true;
             
             // ファイル名テンプレート（空の場合はデフォルト値）
-            _settings.FileNameTemplate = string.IsNullOrWhiteSpace(FileNameTemplateTextBox.Text) 
+            _settings.FileNameTemplate = string.IsNullOrWhiteSpace(FileNameTemplateComboBox.Text) 
                 ? "cap_{yyyyMMdd_HHmmss}_{###}" 
-                : FileNameTemplateTextBox.Text;
+                : FileNameTemplateComboBox.Text;
 
             if (_isRegionSet)
             {
@@ -497,23 +500,51 @@ namespace DesktopCapture
             base.OnClosing(e);
         }
 
-        private void FileNameTemplateTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void FileNameTemplateComboBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            // ファイル名テンプレート変更時に設定を保存
-            if (_settings != null)
+            // テキスト変更時は何もしない（頻繁な保存を避けるため）
+        }
+
+        private void FileNameTemplateComboBox_DropDownClosed(object sender, EventArgs e)
+        {
+            // ドロップダウンから選択された場合に履歴に追加して保存
+            if (!string.IsNullOrWhiteSpace(FileNameTemplateComboBox.Text))
             {
+                _settings.AddFileNameHistory(FileNameTemplateComboBox.Text);
                 SaveSettings();
+                UpdateFileNameHistory();
             }
         }
 
-        private void FileNameTemplateTextBox_LostFocus(object sender, RoutedEventArgs e)
+        private void FileNameTemplateComboBox_LostFocus(object sender, RoutedEventArgs e)
         {
             // テキストボックスが空の場合、デフォルト値を設定
-            if (string.IsNullOrWhiteSpace(FileNameTemplateTextBox.Text))
+            if (string.IsNullOrWhiteSpace(FileNameTemplateComboBox.Text))
             {
-                FileNameTemplateTextBox.Text = "cap_{yyyyMMdd_HHmmss}_{###}";
+                FileNameTemplateComboBox.Text = "cap_{yyyyMMdd_HHmmss}_{###}";
                 StatusText.Text = "ファイル名テンプレートにデフォルト値を設定しました。";
             }
+
+            // 履歴に追加して保存
+            _settings.AddFileNameHistory(FileNameTemplateComboBox.Text);
+            SaveSettings();
+            UpdateFileNameHistory();
+        }
+
+        private void UpdateFileNameHistory()
+        {
+            // 現在のテキストを保持
+            string currentText = FileNameTemplateComboBox.Text;
+
+            // コンボボックスの項目を更新
+            FileNameTemplateComboBox.Items.Clear();
+            foreach (var history in _settings.FileNameHistory)
+            {
+                FileNameTemplateComboBox.Items.Add(history);
+            }
+
+            // テキストを復元
+            FileNameTemplateComboBox.Text = currentText;
         }
 
         private void TemplateHelpButton_Click(object sender, RoutedEventArgs e)
@@ -528,7 +559,10 @@ namespace DesktopCapture
             // ヘルプウィンドウで選択されたテンプレートがあれば、テキストボックスに設定
             if (!string.IsNullOrEmpty(helpWindow.SelectedTemplate))
             {
-                FileNameTemplateTextBox.Text = helpWindow.SelectedTemplate;
+                FileNameTemplateComboBox.Text = helpWindow.SelectedTemplate;
+                _settings.AddFileNameHistory(helpWindow.SelectedTemplate);
+                SaveSettings();
+                UpdateFileNameHistory();
                 StatusText.Text = "テンプレートを設定しました。";
             }
         }

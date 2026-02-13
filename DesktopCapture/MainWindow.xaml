@@ -29,40 +29,56 @@
 
         <!-- 保存設定 -->
         <GroupBox Header="保存設定" Grid.Row="1" Margin="0,0,0,10">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="保存先:" VerticalAlignment="Center" Width="60"/>
-                    <TextBox Name="SavePathTextBox" Width="320" Margin="5,0"/>
-                    <Button Name="BrowseButton" Content="参照" 
-                            Click="BrowseButton_Click" Padding="10,5" Margin="5,0"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="ファイル名:" VerticalAlignment="Center" Width="60"/>
-                    <TextBox Name="FileNameTemplateTextBox" Width="320" Margin="5,0"
-                             TextChanged="FileNameTemplateTextBox_TextChanged"
-                             LostFocus="FileNameTemplateTextBox_LostFocus"
-                             ToolTip="ファイル名のテンプレート（例: cap_{yyyyMMdd_HHmmss}_{###}）"/>
-                    <Button Name="TemplateHelpButton" Content="?" 
-                            Click="TemplateHelpButton_Click" 
-                            Width="30" Height="25" Margin="5,0"
-                            FontWeight="Bold"
-                            ToolTip="テンプレートの書き方を表示"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="形式:" VerticalAlignment="Center" Width="60"/>
-                    <ComboBox Name="FormatComboBox" Width="100" Margin="5,0" SelectedIndex="0"
-                              SelectionChanged="FormatComboBox_SelectionChanged">
-                        <ComboBoxItem Content="PNG"/>
-                        <ComboBoxItem Content="JPEG"/>
-                    </ComboBox>
-                </StackPanel>
-                <CheckBox Name="CopyToClipboardCheckBox" 
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 保存先 -->
+                <TextBlock Text="保存先:" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,5"/>
+                <TextBox Name="SavePathTextBox" Grid.Row="0" Grid.Column="1" Margin="5" Height="25"/>
+                <Button Name="BrowseButton" Content="参照" Grid.Row="0" Grid.Column="2"
+                        Click="BrowseButton_Click" Padding="10,5" Margin="5" Height="25"/>
+
+                <!-- ファイル名 -->
+                <TextBlock Text="ファイル名:" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,5"/>
+                <ComboBox Name="FileNameTemplateComboBox" Grid.Row="1" Grid.Column="1" Margin="5" Height="25"
+                          IsEditable="True"
+                          TextBoxBase.TextChanged="FileNameTemplateComboBox_TextChanged"
+                          DropDownClosed="FileNameTemplateComboBox_DropDownClosed"
+                          LostFocus="FileNameTemplateComboBox_LostFocus"
+                          ToolTip="ファイル名のテンプレート（例: cap_{yyyyMMdd_HHmmss}_{###}）"/>
+                <Button Name="TemplateHelpButton" Content="?" Grid.Row="1" Grid.Column="2"
+                        Click="TemplateHelpButton_Click" 
+                        Width="30" Height="25" Margin="5"
+                        FontWeight="Bold"
+                        ToolTip="テンプレートの書き方を表示"/>
+
+                <!-- 形式 -->
+                <TextBlock Text="形式:" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,5"/>
+                <ComboBox Name="FormatComboBox" Grid.Row="2" Grid.Column="1" Width="100" 
+                          HorizontalAlignment="Left" Margin="5" SelectedIndex="0" Height="25"
+                          SelectionChanged="FormatComboBox_SelectionChanged">
+                    <ComboBoxItem Content="PNG"/>
+                    <ComboBoxItem Content="JPEG"/>
+                </ComboBox>
+
+                <!-- クリップボードコピー -->
+                <CheckBox Name="CopyToClipboardCheckBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
                           Content="キャプチャ時にクリップボードにもコピー" 
-                          Margin="0,5" 
+                          Margin="5" 
                           IsChecked="True"
                           Checked="CopyToClipboardCheckBox_Changed"
                           Unchecked="CopyToClipboardCheckBox_Changed"/>
-            </StackPanel>
+            </Grid>
         </GroupBox>
 
         <!-- キャプチャボタン -->
