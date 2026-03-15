@@ -3,7 +3,8 @@
 デスクトップの特定領域をキャプチャして保存するWindowsアプリケーションです。キャプチャした画像のOCRを行うこともできます。
 
 ## ダウンロード
-- [DesktopCapture.1.0.9570.30526.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9570/DesktopCapture.1.0.9570.30526.zip)
+- [DesktopCapture.1.0.9570.30526.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9570/DesktopCapture.1.0.9570.30526.zip) (x64)
+- [DesktopCapture.1.0.9570.41966_ARM64.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9570/DesktopCapture.1.0.9570.41966_ARM64.zip) (ARM64)
 
 ![DesktopCapture Screenshot](docs/screenshot.jpg)
 
