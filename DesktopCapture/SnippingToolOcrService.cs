@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -166,7 +167,7 @@ namespace DesktopCapture
                 }
 
                 var builder = new StringBuilder();
-                foreach (var line in lines)
+                foreach (var line in SortLinesForReadingOrder(lines))
                 {
                     if (!string.IsNullOrWhiteSpace(line.Text))
                     {
@@ -264,7 +265,33 @@ namespace DesktopCapture
                     string? text = PtrToStringUtf8(lineContentPtr);
                     if (!string.IsNullOrWhiteSpace(text))
                     {
-                        lines.Add(new LineData { Text = text });
+                        float centerX = 0;
+                        float centerY = 0;
+                        float width = 0;
+                        float height = 0;
+
+                        result = NativeMethods.GetOcrLineBoundingBox(lineHandle, out IntPtr boundingBoxPtr);
+                        if (result == 0 && boundingBoxPtr != IntPtr.Zero)
+                        {
+                            BoundingBox boundingBox = Marshal.PtrToStructure<BoundingBox>(boundingBoxPtr);
+                            float minX = Math.Min(Math.Min(boundingBox.x1, boundingBox.x2), Math.Min(boundingBox.x3, boundingBox.x4));
+                            float maxX = Math.Max(Math.Max(boundingBox.x1, boundingBox.x2), Math.Max(boundingBox.x3, boundingBox.x4));
+                            float minY = Math.Min(Math.Min(boundingBox.y1, boundingBox.y2), Math.Min(boundingBox.y3, boundingBox.y4));
+                            float maxY = Math.Max(Math.Max(boundingBox.y1, boundingBox.y2), Math.Max(boundingBox.y3, boundingBox.y4));
+                            width = Math.Max(0, maxX - minX);
+                            height = Math.Max(0, maxY - minY);
+                            centerX = (minX + maxX) / 2f;
+                            centerY = (minY + maxY) / 2f;
+                        }
+
+                        lines.Add(new LineData
+                        {
+                            Text = text,
+                            CenterX = centerX,
+                            CenterY = centerY,
+                            Width = width,
+                            Height = height
+                        });
                     }
                 }
 
@@ -292,6 +319,42 @@ namespace DesktopCapture
             byte[] buffer = new byte[length];
             Marshal.Copy(ptr, buffer, 0, length);
             return Encoding.UTF8.GetString(buffer);
+        }
+
+        private static IEnumerable<LineData> SortLinesForReadingOrder(LineData[] lines)
+        {
+            if (lines.Length <= 1)
+            {
+                return lines;
+            }
+
+            int verticalCount = 0;
+            int validSizeCount = 0;
+            foreach (var line in lines)
+            {
+                if (line.Width <= 0 || line.Height <= 0)
+                {
+                    continue;
+                }
+
+                validSizeCount++;
+                if (line.Height > line.Width * 1.2f)
+                {
+                    verticalCount++;
+                }
+            }
+
+            bool verticalDominant = validSizeCount >= 3 && verticalCount >= (int)Math.Ceiling(validSizeCount * 0.6);
+
+            if (verticalDominant)
+            {
+                return lines
+                    .OrderByDescending(x => x.CenterX)
+                    .ThenBy(x => x.CenterY)
+                    .ToArray();
+            }
+
+            return lines;
         }
 
         private static string FindSnippingToolPath()
@@ -352,9 +415,26 @@ namespace DesktopCapture
             public IntPtr data_ptr;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BoundingBox
+        {
+            public float x1;
+            public float y1;
+            public float x2;
+            public float y2;
+            public float x3;
+            public float y3;
+            public float x4;
+            public float y4;
+        }
+
         private sealed class LineData
         {
             public string Text { get; set; } = string.Empty;
+            public float CenterX { get; set; }
+            public float CenterY { get; set; }
+            public float Width { get; set; }
+            public float Height { get; set; }
         }
 
         private static class NativeMethods
@@ -385,6 +465,9 @@ namespace DesktopCapture
 
             [DllImport("oneocr.dll", CallingConvention = CallingConvention.Cdecl)]
             public static extern long GetOcrLineContent(long line, out IntPtr content);
+
+            [DllImport("oneocr.dll", CallingConvention = CallingConvention.Cdecl)]
+            public static extern long GetOcrLineBoundingBox(long line, out IntPtr boundingBoxPtr);
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
