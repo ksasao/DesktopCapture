@@ -12,7 +12,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="2.5*" MinHeight="200"/>
+            <RowDefinition Height="2.5*" MinHeight="120"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1.4*" MinHeight="160"/>
             <RowDefinition Height="*" MinHeight="100"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -44,7 +46,8 @@
 
                 <!-- 保存先 -->
                 <TextBlock Text="保存先:" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,5"/>
-                <TextBox Name="SavePathTextBox" Grid.Row="0" Grid.Column="1" Margin="5" Height="25"/>
+                <TextBox Name="SavePathTextBox" Grid.Row="0" Grid.Column="1" Margin="5" Height="25"
+                         LostFocus="SavePathTextBox_LostFocus"/>
                 <Button Name="BrowseButton" Content="参照" Grid.Row="0" Grid.Column="2"
                         Click="BrowseButton_Click" Padding="10,5" Margin="5" Height="25"/>
 
@@ -88,7 +91,13 @@
                 Margin="0,0,0,10"/>
 
         <!-- サムネイル表示 -->
-        <GroupBox Header="最新のキャプチャ" Grid.Row="3" Margin="0,0,0,10">
+        <GroupBox Grid.Row="3" Margin="0,0,0,10">
+            <GroupBox.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="最新のキャプチャ"/>
+                    <TextBlock Name="CurrentCaptureFileNameText" Margin="8,0,0,0" Foreground="DarkBlue" Text="(未選択)"/>
+                </StackPanel>
+            </GroupBox.Header>
             <Border BorderBrush="Gray" BorderThickness="1" Background="White">
                 <Viewbox Stretch="Uniform">
                     <Image Name="ThumbnailImage" />
@@ -96,15 +105,43 @@
             </Border>
         </GroupBox>
 
+        <GridSplitter Grid.Row="4"
+                      Height="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      ResizeDirection="Rows"
+                      ResizeBehavior="PreviousAndNext"
+                      Background="#22000000"/>
+
+        <!-- Markdown記録 -->
+        <GroupBox Header="記録（Markdown）" Grid.Row="5" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Name="InsertLatestImageTagButton" Content="画像タグを挿入" Padding="10,5" Margin="0,0,5,0"
+                            Click="InsertLatestImageTagButton_Click"/>
+                </StackPanel>
+
+                <TextBox Name="MarkdownEditorTextBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         TextChanged="MarkdownEditorTextBox_TextChanged"
+                         PreviewKeyDown="MarkdownEditorTextBox_PreviewKeyDown"/>
+            </Grid>
+        </GroupBox>
+
         <!-- サムネイル履歴 -->
-        <GroupBox Header="キャプチャ履歴" Grid.Row="4" Margin="0,0,0,10">
+        <GroupBox Header="キャプチャ履歴" Grid.Row="6" Margin="0,0,0,10">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <WrapPanel Name="ThumbnailHistoryPanel" Orientation="Horizontal"/>
             </ScrollViewer>
         </GroupBox>
 
         <!-- ステータス -->
-        <TextBlock Name="StatusText" Grid.Row="5" 
+        <TextBlock Name="StatusText" Grid.Row="7" 
                   Text="領域を選択してください。" 
                   FontSize="12" Foreground="Blue"/>
     </Grid>
