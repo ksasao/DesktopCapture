@@ -39,6 +39,7 @@ namespace DesktopCapture
         private bool _isLoadingSettings;
         private string _lastAppliedSavePath = string.Empty;
         private string _lastAppliedMemoPath = string.Empty;
+        private readonly SnippingToolOcrService _ocrService;
 
         // Windows API for global hotkey
         [DllImport("user32.dll")]
@@ -57,6 +58,13 @@ namespace DesktopCapture
         {
             InitializeComponent();
             InitializeNoteEditor();
+            _ocrService = new SnippingToolOcrService();
+
+            if (!_ocrService.IsAvailable)
+            {
+                InsertLatestOcrButton.ToolTip = _ocrService.UnavailableReason;
+                StatusText.Text = $"OCR未使用: {_ocrService.UnavailableReason}";
+            }
             
             // タイトルにビルド番号を追加
             SetWindowTitle();
@@ -584,6 +592,46 @@ namespace DesktopCapture
             AppendImageTagToEditor(_currentCaptureFileName, _currentCaptureFullPath);
             SaveMemoToCurrentSavePath();
             StatusText.Text = $"画像タグを挿入しました: {_currentCaptureFileName}";
+        }
+
+        private void InsertLatestOcrButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_currentCaptureFileName) || string.IsNullOrEmpty(_currentCaptureFullPath))
+            {
+                MessageBox.Show("OCR対象のキャプチャがありません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (!_ocrService.TryExtractText(_currentCaptureFullPath, out string recognizedText, out string errorMessage))
+            {
+                MessageBox.Show(errorMessage, "OCRエラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = "OCRに失敗しました。";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(recognizedText))
+            {
+                StatusText.Text = $"OCR結果は空でした: {_currentCaptureFileName}";
+                return;
+            }
+
+            AppendOcrTextToEditor(_currentCaptureFileName, recognizedText);
+            SaveMemoToCurrentSavePath();
+            StatusText.Text = $"OCR結果を挿入しました: {_currentCaptureFileName}";
+        }
+
+        private void AppendOcrTextToEditor(string fileName, string recognizedText)
+        {
+            if (!string.IsNullOrWhiteSpace(MarkdownEditorTextBox.Text) && !MarkdownEditorTextBox.Text.EndsWith(Environment.NewLine))
+            {
+                MarkdownEditorTextBox.AppendText(Environment.NewLine);
+            }
+
+            MarkdownEditorTextBox.AppendText($"### OCR: {fileName}{Environment.NewLine}");
+            MarkdownEditorTextBox.AppendText(recognizedText.Trim());
+            MarkdownEditorTextBox.AppendText(Environment.NewLine + Environment.NewLine);
+            MarkdownEditorTextBox.CaretIndex = MarkdownEditorTextBox.Text.Length;
+            MarkdownEditorTextBox.ScrollToEnd();
         }
 
         private static string NormalizeSavePath(string? savePath)

@@ -124,6 +124,9 @@
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
                     <Button Name="InsertLatestImageTagButton" Content="画像タグを挿入" Padding="10,5" Margin="0,0,5,0"
                             Click="InsertLatestImageTagButton_Click"/>
+                    <Button Name="InsertLatestOcrButton" Content="OCR" Padding="10,5"
+                            ToolTipService.ShowOnDisabled="True"
+                            Click="InsertLatestOcrButton_Click"/>
                 </StackPanel>
 
                 <TextBox Name="MarkdownEditorTextBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
