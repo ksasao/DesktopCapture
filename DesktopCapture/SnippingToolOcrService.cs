@@ -27,17 +27,10 @@ namespace DesktopCapture
         {
             try
             {
-                SnippingToolPackageInfo packageInfo = FindSnippingToolPackageInfo();
-                string sourcePath = packageInfo.SnippingToolPath;
+                string sourcePath = FindSnippingToolPath();
                 if (string.IsNullOrWhiteSpace(sourcePath))
                 {
                     UnavailableReason = "Snipping Tool のインストール先が見つかりません。";
-                    return;
-                }
-
-                if (!IsArchitectureCompatible(packageInfo.Architecture, RuntimeInformation.ProcessArchitecture))
-                {
-                    UnavailableReason = BuildArchitectureMismatchMessage(packageInfo.Architecture, RuntimeInformation.ProcessArchitecture);
                     return;
                 }
 
@@ -73,7 +66,7 @@ namespace DesktopCapture
             }
             catch (BadImageFormatException)
             {
-                UnavailableReason = BuildArchitectureMismatchMessage(packageArchitecture: "unknown", processArchitecture: RuntimeInformation.ProcessArchitecture);
+                UnavailableReason = "oneocr.dll のアーキテクチャが一致しません。x64 環境で実行してください。";
             }
             catch (Exception ex)
             {
@@ -364,44 +357,12 @@ namespace DesktopCapture
             return lines;
         }
 
-        private static bool IsArchitectureCompatible(string packageArchitecture, Architecture processArchitecture)
-        {
-            if (string.IsNullOrWhiteSpace(packageArchitecture))
-            {
-                return true;
-            }
-
-            string normalizedPackageArchitecture = packageArchitecture.Trim().ToLowerInvariant();
-            if (normalizedPackageArchitecture == "neutral")
-            {
-                return true;
-            }
-
-            return (normalizedPackageArchitecture == "x64" && processArchitecture == Architecture.X64)
-                || (normalizedPackageArchitecture == "arm64" && processArchitecture == Architecture.Arm64)
-                || (normalizedPackageArchitecture == "x86" && processArchitecture == Architecture.X86);
-        }
-
-        private static string BuildArchitectureMismatchMessage(string packageArchitecture, Architecture processArchitecture)
-        {
-            string packageArchText = string.IsNullOrWhiteSpace(packageArchitecture) ? "unknown" : packageArchitecture;
-            return "oneocr.dll のアーキテクチャとアプリ実行アーキテクチャが一致しません。"
-                + Environment.NewLine
-                + $"Snipping Tool: {packageArchText}, アプリ: {processArchitecture}"
-                + Environment.NewLine
-                + "対応するビルドを使用してください。"
-                + Environment.NewLine
-                + "例: dotnet publish -c Release -r win-x64"
-                + Environment.NewLine
-                + "    dotnet publish -c Release -r win-arm64";
-        }
-
-        private static SnippingToolPackageInfo FindSnippingToolPackageInfo()
+        private static string FindSnippingToolPath()
         {
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = "-NoProfile -Command \"$pkg=Get-AppxPackage -Name Microsoft.ScreenSketch | Sort-Object Version -Descending | Select-Object -First 1; if($pkg){ $install=$pkg.InstallLocation; $app=$pkg.AppInstallPath; $arch=$pkg.Architecture; Write-Output ($install + '|' + $app + '|' + $arch) }\"",
+                Arguments = "-NoProfile -Command \"$pkg=Get-AppxPackage -Name Microsoft.ScreenSketch; if($pkg){ if($pkg.InstallLocation){ Join-Path $pkg.InstallLocation 'SnippingTool' }; if($pkg.InstallLocation -and $pkg.AppInstallPath){ Join-Path (Join-Path $pkg.InstallLocation $pkg.AppInstallPath) 'SnippingTool' } }\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -411,7 +372,7 @@ namespace DesktopCapture
             using var process = Process.Start(psi);
             if (process == null)
             {
-                return new SnippingToolPackageInfo();
+                return string.Empty;
             }
 
             string output = process.StandardOutput.ReadToEnd();
@@ -419,62 +380,28 @@ namespace DesktopCapture
 
             if (string.IsNullOrWhiteSpace(output))
             {
-                return new SnippingToolPackageInfo();
+                return string.Empty;
             }
 
             string[] candidates = output
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (string line in candidates)
+            foreach (string candidate in candidates)
             {
-                string normalized = line.Trim();
+                string normalized = candidate.Trim();
                 if (string.IsNullOrWhiteSpace(normalized))
                 {
                     continue;
                 }
 
-                string[] parts = normalized.Split('|');
-                if (parts.Length < 3)
+                string oneOcrPath = Path.Combine(normalized, "oneocr.dll");
+                if (Directory.Exists(normalized) && File.Exists(oneOcrPath))
                 {
-                    continue;
-                }
-
-                string installLocation = parts[0].Trim();
-                string appInstallPath = parts[1].Trim();
-                string architecture = parts[2].Trim();
-
-                var pathCandidates = new List<string>();
-                if (!string.IsNullOrWhiteSpace(installLocation))
-                {
-                    pathCandidates.Add(Path.Combine(installLocation, "SnippingTool"));
-                }
-
-                if (!string.IsNullOrWhiteSpace(installLocation) && !string.IsNullOrWhiteSpace(appInstallPath))
-                {
-                    pathCandidates.Add(Path.Combine(installLocation, appInstallPath, "SnippingTool"));
-                }
-
-                foreach (string candidatePath in pathCandidates)
-                {
-                    string oneOcrPath = Path.Combine(candidatePath, OneOcrDllFileName);
-                    if (Directory.Exists(candidatePath) && File.Exists(oneOcrPath))
-                    {
-                        return new SnippingToolPackageInfo
-                        {
-                            SnippingToolPath = candidatePath,
-                            Architecture = architecture
-                        };
-                    }
+                    return normalized;
                 }
             }
 
-            return new SnippingToolPackageInfo();
-        }
-
-        private sealed class SnippingToolPackageInfo
-        {
-            public string SnippingToolPath { get; set; } = string.Empty;
-            public string Architecture { get; set; } = string.Empty;
+            return string.Empty;
         }
 
         [StructLayout(LayoutKind.Sequential)]

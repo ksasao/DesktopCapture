@@ -9,5 +9,7 @@
     <Platform Solution="*|ARM32" Project="ARM32" />
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
+    <Build Solution="*|Any CPU" Project="false" />
+    <Build Solution="*|ARM32" Project="false" />
   </Project>
 </Solution>
