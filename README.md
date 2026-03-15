@@ -1,6 +1,9 @@
 # DesktopCapture
 
-デスクトップの特定領域をキャプチャして保存するWindowsアプリケーションです。
+デスクトップの特定領域をキャプチャして保存するWindowsアプリケーションです。キャプチャした画像のOCRを行うこともできます。
+
+## ダウンロード
+- [DesktopCapture.1.0.9570.29384.zip](app/DesktopCapture.1.0.9570.29384.zip)
 
 ![DesktopCapture Screenshot](docs/screenshot.jpg)
 
