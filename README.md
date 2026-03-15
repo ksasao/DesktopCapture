@@ -19,7 +19,7 @@
 
 ## システム要件
 
-- Windows 10/11
+- Windows 11
 - .NET 8.0 Runtime
 
 ## 使い方
