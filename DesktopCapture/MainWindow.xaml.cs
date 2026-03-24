@@ -62,6 +62,10 @@ namespace DesktopCapture
             @"(?<!\]\()\bhttps?://[^\s\r\n""'<>\[\]()]+",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        private static readonly Regex MarkdownLinkSyntaxRegex = new Regex(
+            @"!?\[[^\]]+\]\([^)]+\)",
+            RegexOptions.Compiled);
+
         // Windows API for global hotkey
         [DllImport("user32.dll")]
         private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -837,6 +841,23 @@ namespace DesktopCapture
             SaveMemoToCurrentSavePath();
         }
 
+        private void MarkdownEditorContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            MarkdownEditorPasteMenuItem.IsEnabled = Clipboard.ContainsText() || Clipboard.ContainsImage();
+        }
+
+        private void MarkdownEditorPasteMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (Clipboard.ContainsImage() && !Clipboard.ContainsText())
+            {
+                HandlePastedImage();
+            }
+            else
+            {
+                MarkdownEditorTextBox.Paste();
+            }
+        }
+
         private void OnMarkdownEditorPasting(object sender, DataObjectPastingEventArgs e)
         {
             string? plainText = e.DataObject.GetData(DataFormats.UnicodeText) as string
@@ -885,6 +906,12 @@ namespace DesktopCapture
             // HTML変換が得られなかった場合はプレーンテキストパスで処理する
             if (replacement == null)
             {
+                // すでにMarkdownリンク構文 [text](url) / ![alt](url) を含む場合は加工せずそのままペーストする
+                if (MarkdownLinkSyntaxRegex.IsMatch(plainText))
+                {
+                    return;
+                }
+
                 string trimmed = plainText.Trim();
                 var singleUrlMatch = MarkdownUrlRegex.Match(trimmed);
                 bool isPureUrl = singleUrlMatch.Success
@@ -969,12 +996,78 @@ namespace DesktopCapture
 
         private void MarkdownEditorTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.V)
+            {
+                if (Clipboard.ContainsImage() && !Clipboard.ContainsText())
+                {
+                    e.Handled = true;
+                    HandlePastedImage();
+                    return;
+                }
+            }
+
             if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.S)
             {
                 SaveMemoToCurrentSavePath();
                 StatusText.Text = "memo.md を保存しました。";
                 e.Handled = true;
             }
+        }
+
+        private void HandlePastedImage()
+        {
+            try
+            {
+                BitmapSource? bitmapSource = Clipboard.GetImage();
+                if (bitmapSource == null)
+                {
+                    return;
+                }
+
+                _captureCount++;
+                string extension = FormatComboBox.SelectedIndex == 0 ? "png" : "jpg";
+                string fileName = _settings.GenerateFileName(_captureCount, extension);
+                string fullPath = System.IO.Path.Combine(SavePathTextBox.Text, fileName);
+
+                string? directory = System.IO.Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                ImageFormat format = FormatComboBox.SelectedIndex == 0 ? ImageFormat.Png : ImageFormat.Jpeg;
+
+                using Bitmap bitmap = BitmapSourceToBitmap(bitmapSource);
+                bitmap.Save(fullPath, format);
+
+                DisplayThumbnail(bitmap, fileName, fullPath);
+                StatusText.Text = $"保存完了: {fileName} (#{_captureCount}) [貼り付け]";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"画像の保存に失敗しました: {ex.Message}", "エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = "画像の貼り付けに失敗しました。";
+            }
+        }
+
+        private static Bitmap BitmapSourceToBitmap(BitmapSource bitmapSource)
+        {
+            var converted = new FormatConvertedBitmap(bitmapSource, PixelFormats.Bgra32, null, 0);
+            int width = converted.PixelWidth;
+            int height = converted.PixelHeight;
+            int stride = width * 4;
+            byte[] pixels = new byte[height * stride];
+            converted.CopyPixels(pixels, stride, 0);
+
+            var bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            BitmapData bitmapData = bitmap.LockBits(
+                new DrawingRectangle(0, 0, width, height),
+                ImageLockMode.WriteOnly,
+                bitmap.PixelFormat);
+            Marshal.Copy(pixels, 0, bitmapData.Scan0, pixels.Length);
+            bitmap.UnlockBits(bitmapData);
+            return bitmap;
         }
 
         private BitmapImage BitmapToBitmapImage(Bitmap bitmap)

@@ -132,7 +132,21 @@
                 <TextBox Name="MarkdownEditorTextBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          TextChanged="MarkdownEditorTextBox_TextChanged"
-                         PreviewKeyDown="MarkdownEditorTextBox_PreviewKeyDown"/>
+                         PreviewKeyDown="MarkdownEditorTextBox_PreviewKeyDown">
+                    <TextBox.ContextMenu>
+                        <ContextMenu Opened="MarkdownEditorContextMenu_Opened">
+                            <MenuItem Command="ApplicationCommands.Cut"
+                                      CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                            <MenuItem Command="ApplicationCommands.Copy"
+                                      CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                            <MenuItem Name="MarkdownEditorPasteMenuItem" Header="貼り付け(_P)"
+                                      Click="MarkdownEditorPasteMenuItem_Click"/>
+                            <Separator/>
+                            <MenuItem Command="ApplicationCommands.SelectAll"
+                                      CommandTarget="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        </ContextMenu>
+                    </TextBox.ContextMenu>
+                </TextBox>
             </Grid>
         </GroupBox>
 
