@@ -2,7 +2,10 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -256,6 +259,57 @@ namespace DesktopCapture
                 System.Diagnostics.Debug.WriteLine($"画像読み込み失敗: {filePath} - {ex.Message}");
                 return null;
             }
+        }
+
+        private int ScanMaxCaptureCount(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+                return 0;
+            string template = _settings?.FileNameTemplate ?? "cap_{yyyyMMdd_HHmmss}_{###}";
+            var regex = BuildCounterRegex(template);
+            if (regex == null)
+                return 0;
+            int max = 0;
+            foreach (string file in Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories))
+            {
+                string relative = Path.GetRelativePath(folderPath, file).Replace('\\', '/');
+                var m = regex.Match(relative);
+                if (m.Success && m.Groups["counter"].Success &&
+                    int.TryParse(m.Groups["counter"].Value, out int n) && n > max)
+                    max = n;
+            }
+            return max;
+        }
+
+        private static Regex? BuildCounterRegex(string template)
+        {
+            if (!Regex.IsMatch(template, @"\{#+\}"))
+                return null;
+            var sb = new StringBuilder("^");
+            int i = 0;
+            while (i < template.Length)
+            {
+                if (template[i] == '{')
+                {
+                    int end = template.IndexOf('}', i + 1);
+                    if (end > i)
+                    {
+                        string inner = template.Substring(i + 1, end - i - 1);
+                        sb.Append(inner.All(c => c == '#')
+                            ? $@"(?<counter>\d{{{inner.Length},}})"
+                            : @"[^/\\]+?");
+                        i = end + 1;
+                        continue;
+                    }
+                }
+                sb.Append(Regex.Escape(template[i].ToString()));
+                i++;
+            }
+            string built = sb.ToString();
+            if (!Regex.IsMatch(built, @"\\\.[a-zA-Z]{2,5}$"))
+                sb.Append(@"\.[^./\\]+");
+            sb.Append('$');
+            return new Regex(sb.ToString(), RegexOptions.IgnoreCase);
         }
     }
 }

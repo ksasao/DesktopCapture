@@ -191,7 +191,6 @@ namespace DesktopCapture
             {
                 _captureRegion = regionSelector.SelectedRegion;
                 _isRegionSet = true;
-                _captureCount = 0; // カウンターをリセット
 
                 // 選択時の DPI スケールを記録
                 var ps = PresentationSource.FromVisual(this);
@@ -222,6 +221,7 @@ namespace DesktopCapture
                 SaveMemoToFile(string.IsNullOrWhiteSpace(_lastAppliedMemoPath) ? GetMemoFilePath(_lastAppliedSavePath, FileNameTemplateComboBox.Text) : _lastAppliedMemoPath);
                 SavePathTextBox.Text = NormalizeSavePath(folderDialog.SelectedPath);
                 LoadMemoAndHistoryFromCurrentSavePath();
+                _captureCount = ScanMaxCaptureCount(SavePathTextBox.Text);
                 // 設定を保存
                 SaveSettings();
             }
@@ -244,6 +244,7 @@ namespace DesktopCapture
             SaveMemoToFile(string.IsNullOrWhiteSpace(_lastAppliedMemoPath) ? GetMemoFilePath(_lastAppliedSavePath, FileNameTemplateComboBox.Text) : _lastAppliedMemoPath);
             SavePathTextBox.Text = normalizedNewPath;
             LoadMemoAndHistoryFromCurrentSavePath();
+            _captureCount = ScanMaxCaptureCount(SavePathTextBox.Text);
             SaveSettings();
         }
 

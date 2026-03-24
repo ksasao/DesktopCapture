@@ -61,7 +61,6 @@ namespace DesktopCapture
                     _captureRegionDpiScaleX = _settings.CaptureRegion.DpiScaleX > 0 ? _settings.CaptureRegion.DpiScaleX : 1.0;
                     _captureRegionDpiScaleY = _settings.CaptureRegion.DpiScaleY > 0 ? _settings.CaptureRegion.DpiScaleY : 1.0;
                     _isRegionSet = true;
-                    _captureCount = 0;
 
                     RegionText.Text = $"X:{_captureRegion.X}, Y:{_captureRegion.Y}, " +
                                       $"W:{_captureRegion.Width}, H:{_captureRegion.Height}";
@@ -75,6 +74,7 @@ namespace DesktopCapture
             }
 
             LoadMemoAndHistoryFromCurrentSavePath();
+            _captureCount = ScanMaxCaptureCount(SavePathTextBox.Text);
             _lastAppliedMemoPath = GetMemoFilePath();
         }
 
