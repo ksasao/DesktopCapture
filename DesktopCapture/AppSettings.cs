@@ -154,20 +154,26 @@ namespace DesktopCapture
         public int Y { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
+        /// <summary>領域選択時の水平 DPI スケール (96dpi=1.0, 120dpi=1.25, ...)</summary>
+        public double DpiScaleX { get; set; } = 1.0;
+        /// <summary>領域選択時の垂直 DPI スケール</summary>
+        public double DpiScaleY { get; set; } = 1.0;
 
         public Rectangle ToRectangle()
         {
             return new Rectangle(X, Y, Width, Height);
         }
 
-        public static CaptureRegionSettings FromRectangle(Rectangle rect)
+        public static CaptureRegionSettings FromRectangle(Rectangle rect, double dpiScaleX = 1.0, double dpiScaleY = 1.0)
         {
             return new CaptureRegionSettings
             {
                 X = rect.X,
                 Y = rect.Y,
                 Width = rect.Width,
-                Height = rect.Height
+                Height = rect.Height,
+                DpiScaleX = dpiScaleX,
+                DpiScaleY = dpiScaleY
             };
         }
     }

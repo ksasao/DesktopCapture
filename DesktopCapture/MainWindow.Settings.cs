@@ -58,6 +58,8 @@ namespace DesktopCapture
                 if (_settings.CaptureRegion != null)
                 {
                     _captureRegion = _settings.CaptureRegion.ToRectangle();
+                    _captureRegionDpiScaleX = _settings.CaptureRegion.DpiScaleX > 0 ? _settings.CaptureRegion.DpiScaleX : 1.0;
+                    _captureRegionDpiScaleY = _settings.CaptureRegion.DpiScaleY > 0 ? _settings.CaptureRegion.DpiScaleY : 1.0;
                     _isRegionSet = true;
                     _captureCount = 0;
 
@@ -161,7 +163,8 @@ namespace DesktopCapture
 
             if (_isRegionSet)
             {
-                _settings.CaptureRegion = CaptureRegionSettings.FromRectangle(_captureRegion);
+                _settings.CaptureRegion = CaptureRegionSettings.FromRectangle(
+                    _captureRegion, _captureRegionDpiScaleX, _captureRegionDpiScaleY);
             }
 
             SaveWindowPosition();

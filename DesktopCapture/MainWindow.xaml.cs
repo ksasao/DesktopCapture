@@ -25,6 +25,8 @@ namespace DesktopCapture
         private string _lastAppliedSavePath = string.Empty;
         private string _lastAppliedMemoPath = string.Empty;
         private readonly SnippingToolOcrService _ocrService;
+        private double _captureRegionDpiScaleX = 1.0;
+        private double _captureRegionDpiScaleY = 1.0;
 
         // Windows API for global hotkey
         [DllImport("user32.dll")]
@@ -99,6 +101,24 @@ namespace DesktopCapture
                 MessageBox.Show("ホットキー (Ctrl+Shift+C) の登録に失敗しました。", "警告",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+
+            // DPI 変更イベントを購読
+            DpiChanged += MainWindow_DpiChanged;
+
+            // 起動時のDPIスケール値を現在値に同期する（物理ピクセル座標の補正は不要）
+            if (_isRegionSet)
+            {
+                var ps = PresentationSource.FromVisual(this);
+                double currentDpiX = ps?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+                double currentDpiY = ps?.CompositionTarget?.TransformToDevice.M22 ?? 1.0;
+                if (Math.Abs(_captureRegionDpiScaleX - currentDpiX) > 0.001 ||
+                    Math.Abs(_captureRegionDpiScaleY - currentDpiY) > 0.001)
+                {
+                    _captureRegionDpiScaleX = currentDpiX;
+                    _captureRegionDpiScaleY = currentDpiY;
+                    SaveSettings();
+                }
+            }
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)
@@ -144,6 +164,18 @@ namespace DesktopCapture
             base.OnClosing(e);
         }
 
+        private void MainWindow_DpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            if (!_isRegionSet) return;
+
+            // キャプチャ座標は物理ピクセルで保持しており、DPI変化の影響を受けないため
+            // 座標の再計算は不要。DPIスケール値のみ更新する。
+            _captureRegionDpiScaleX = e.NewDpi.DpiScaleX;
+            _captureRegionDpiScaleY = e.NewDpi.DpiScaleY;
+            SaveSettings();
+            StatusText.Text = $"DPI変更({e.OldDpi.PixelsPerInchX:F0}→{e.NewDpi.PixelsPerInchX:F0}dpi)。必要に応じてキャプチャ領域を再選択してください。";
+        }
+
         private static string NormalizeSavePath(string? savePath)
         {
             return string.IsNullOrWhiteSpace(savePath)
@@ -160,6 +192,11 @@ namespace DesktopCapture
                 _captureRegion = regionSelector.SelectedRegion;
                 _isRegionSet = true;
                 _captureCount = 0; // カウンターをリセット
+
+                // 選択時の DPI スケールを記録
+                var ps = PresentationSource.FromVisual(this);
+                _captureRegionDpiScaleX = ps?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+                _captureRegionDpiScaleY = ps?.CompositionTarget?.TransformToDevice.M22 ?? 1.0;
 
                 RegionText.Text = $"X:{_captureRegion.X}, Y:{_captureRegion.Y}, " +
                                   $"W:{_captureRegion.Width}, H:{_captureRegion.Height}";
