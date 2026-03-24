@@ -98,7 +98,7 @@
                     <TextBlock Name="CurrentCaptureFileNameText" Margin="8,0,0,0" Foreground="DarkBlue" Text="(未選択)"/>
                 </StackPanel>
             </GroupBox.Header>
-            <Border BorderBrush="Gray" BorderThickness="1" Background="White">
+            <Border BorderBrush="Gray" BorderThickness="1" Background="#666666">
                 <Viewbox Stretch="Uniform">
                     <Image Name="ThumbnailImage" />
                 </Viewbox>
@@ -132,7 +132,8 @@
                 <TextBox Name="MarkdownEditorTextBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          TextChanged="MarkdownEditorTextBox_TextChanged"
-                         PreviewKeyDown="MarkdownEditorTextBox_PreviewKeyDown">
+                         PreviewKeyDown="MarkdownEditorTextBox_PreviewKeyDown"
+                         PreviewMouseWheel="MarkdownEditorTextBox_PreviewMouseWheel">
                     <TextBox.ContextMenu>
                         <ContextMenu Opened="MarkdownEditorContextMenu_Opened">
                             <MenuItem Command="ApplicationCommands.Cut"

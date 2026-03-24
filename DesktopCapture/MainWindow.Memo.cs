@@ -239,7 +239,40 @@ namespace DesktopCapture
                 SaveMemoToCurrentSavePath();
                 StatusText.Text = "memo.md を保存しました。";
                 e.Handled = true;
+                return;
             }
+
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (e.Key == Key.OemPlus || e.Key == Key.Add)
+                {
+                    ChangeFontSize(1);
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key == Key.OemMinus || e.Key == Key.Subtract)
+                {
+                    ChangeFontSize(-1);
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        private void MarkdownEditorTextBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                ChangeFontSize(e.Delta > 0 ? 1 : -1);
+                e.Handled = true;
+            }
+        }
+
+        private void ChangeFontSize(double delta)
+        {
+            const double minSize = 8;
+            const double maxSize = 72;
+            MarkdownEditorTextBox.FontSize = Math.Clamp(MarkdownEditorTextBox.FontSize + delta, minSize, maxSize);
         }
     }
 }
