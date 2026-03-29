@@ -99,9 +99,23 @@
                 </StackPanel>
             </GroupBox.Header>
             <Border BorderBrush="Gray" BorderThickness="1" Background="#666666">
-                <Viewbox Stretch="Uniform">
-                    <Image Name="ThumbnailImage" />
-                </Viewbox>
+                <Grid>
+                    <Viewbox Stretch="Uniform">
+                        <Image Name="ThumbnailImage" />
+                    </Viewbox>
+                    <Canvas Name="ThumbnailSelectionCanvas"
+                            Background="Transparent"
+                            Cursor="Cross"
+                            MouseLeftButtonDown="ThumbnailCanvas_MouseLeftButtonDown"
+                            MouseMove="ThumbnailCanvas_MouseMove"
+                            MouseLeftButtonUp="ThumbnailCanvas_MouseLeftButtonUp">
+                        <Rectangle Name="ThumbnailSelectionRect"
+                                   Stroke="#FF4400" StrokeThickness="2"
+                                   StrokeDashArray="4 2"
+                                   Fill="#33FF4400"
+                                   Visibility="Collapsed"/>
+                    </Canvas>
+                </Grid>
             </Border>
         </GroupBox>
 

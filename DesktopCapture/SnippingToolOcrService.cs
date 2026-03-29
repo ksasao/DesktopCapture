@@ -159,7 +159,29 @@ namespace DesktopCapture
             try
             {
                 using Bitmap image = new Bitmap(imagePath);
-                LineData[] lines = RunOcr(image);
+                return TryExtractText(image, out recognizedText, out errorMessage);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"OCR実行エラー: {ex.Message}";
+                return false;
+            }
+        }
+
+        public bool TryExtractText(Bitmap bitmap, out string recognizedText, out string errorMessage)
+        {
+            recognizedText = string.Empty;
+            errorMessage = string.Empty;
+
+            if (!IsAvailable)
+            {
+                errorMessage = UnavailableReason;
+                return false;
+            }
+
+            try
+            {
+                LineData[] lines = RunOcr(bitmap);
                 if (lines.Length == 0)
                 {
                     recognizedText = string.Empty;
