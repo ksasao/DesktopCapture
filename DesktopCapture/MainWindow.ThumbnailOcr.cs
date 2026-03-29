@@ -64,6 +64,51 @@ namespace DesktopCapture
             PerformOcrOnThumbnailRegion(selX, selY, selW, selH);
         }
 
+        /// <summary>
+        /// キャプチャ完了後に「自動的にOCR」チェックボックスが有効であれば
+        /// 画像全体に対して OCR を実行し Markdown 領域に追記する。
+        /// </summary>
+        internal void TriggerAutoOcrIfEnabled(string captureFileName, string captureFullPath)
+        {
+            if (AutoOcrCheckBox.IsChecked != true) return;
+            if (!_ocrService.IsAvailable) return;
+
+            StatusText.Text = "自動OCR処理中...";
+
+            Task.Run(() =>
+            {
+                bool success;
+                string recognizedText;
+                string errorMessage;
+
+                try
+                {
+                    success = _ocrService.TryExtractText(captureFullPath, out recognizedText, out errorMessage);
+                }
+                catch (Exception ex)
+                {
+                    success = false;
+                    recognizedText = string.Empty;
+                    errorMessage = ex.Message;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (!success || string.IsNullOrWhiteSpace(recognizedText))
+                    {
+                        StatusText.Text = string.IsNullOrEmpty(errorMessage)
+                            ? "自動OCR: テキストが検出されませんでした。"
+                            : $"自動OCRエラー: {errorMessage}";
+                        return;
+                    }
+
+                    AppendOcrTextToEditor(captureFileName, recognizedText);
+                    SaveMemoToCurrentSavePath();
+                    StatusText.Text = $"自動OCR完了: {recognizedText.Length}文字を検出しました。";
+                });
+            });
+        }
+
         private void PerformOcrOnThumbnailRegion(double selX, double selY, double selW, double selH)
         {
             if (!_ocrService.IsAvailable)
@@ -191,3 +236,4 @@ namespace DesktopCapture
         }
     }
 }
+

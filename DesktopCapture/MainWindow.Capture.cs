@@ -85,6 +85,8 @@ namespace DesktopCapture
                             statusMessage += " [クリップボードにコピー済み]";
                         }
                         StatusText.Text = statusMessage;
+                        TriggerAutoOcrIfEnabled(fileName, fullPath);
+
                     });
                 }
             }
@@ -198,6 +200,7 @@ namespace DesktopCapture
 
                 DisplayThumbnail(bitmap, fileName, fullPath);
                 StatusText.Text = $"保存完了: {fileName} (#{_captureCount}) [貼り付け]";
+                TriggerAutoOcrIfEnabled(fileName, fullPath);  // ← 追加
             }
             catch (Exception ex)
             {

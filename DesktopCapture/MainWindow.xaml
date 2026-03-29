@@ -141,6 +141,11 @@
                     <Button Name="InsertLatestOcrButton" Content="OCR" Padding="10,5"
                             ToolTipService.ShowOnDisabled="True"
                             Click="InsertLatestOcrButton_Click"/>
+                    <CheckBox Name="AutoOcrCheckBox"
+                              Content="自動的にOCR"
+                              VerticalAlignment="Center"
+                              Margin="8,0,0,0"
+                              ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
 
                 <TextBox Name="MarkdownEditorTextBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
