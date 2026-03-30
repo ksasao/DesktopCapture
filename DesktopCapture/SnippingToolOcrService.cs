@@ -312,7 +312,11 @@ namespace DesktopCapture
                             CenterX = centerX,
                             CenterY = centerY,
                             Width = width,
-                            Height = height
+                            Height = height,
+                            Left = centerX - (width / 2f),
+                            Top = centerY - (height / 2f),
+                            Right = centerX + (width / 2f),
+                            Bottom = centerY + (height / 2f)
                         });
                     }
                 }
@@ -350,33 +354,281 @@ namespace DesktopCapture
                 return lines;
             }
 
-            int verticalCount = 0;
-            int validSizeCount = 0;
-            foreach (var line in lines)
+            var validLines = GetValidLines(lines);
+
+            if (validLines.Count <= 1)
             {
-                if (line.Width <= 0 || line.Height <= 0)
+                return lines;
+            }
+
+            const float verticalRatio = 1.3f;
+            const float overlapRatio = 0.2f;
+            const float horizontalGapRatio = 1.8f;
+
+            var (verticalLines, horizontalLines) = SplitLinesByOrientation(validLines, verticalRatio);
+
+            float medianHorizontalHeight = MedianOrDefault(horizontalLines.Select(x => x.Height), 30f);
+
+            float horizontalGapMax = medianHorizontalHeight * horizontalGapRatio;
+
+            var verticalBlocks = GroupLines(verticalLines, isVertical: true, horizontalGapMax, overlapRatio)
+                .OrderByDescending(x => x.Left)
+                .ThenBy(x => x.Top)
+                .ToList();
+
+            var horizontalBlocks = GroupLines(horizontalLines, isVertical: false, horizontalGapMax, overlapRatio)
+                .ToList();
+            horizontalBlocks = SortHorizontalBlocksByRows(horizontalBlocks);
+
+            // For Japanese documents, vertical blocks are usually read first from right to left.
+            // Horizontal blocks are appended after vertical blocks for mixed-layout robustness.
+            return verticalBlocks
+                .Concat(horizontalBlocks)
+                .SelectMany(x => x.Lines)
+                .ToArray();
+        }
+
+        private static List<LineData> GetValidLines(IEnumerable<LineData> lines)
+        {
+            // Keep only lines with meaningful geometry. This matches previous behavior.
+            return lines
+                .Where(x => x.Width > 0 && x.Height > 0)
+                .ToList();
+        }
+
+        private static (List<LineData> VerticalLines, List<LineData> HorizontalLines) SplitLinesByOrientation(
+            IEnumerable<LineData> lines,
+            float verticalRatio)
+        {
+            // Heuristic: h / w >= verticalRatio => vertical writing candidate.
+            var verticalLines = lines.Where(x => x.Height / Math.Max(1f, x.Width) >= verticalRatio).ToList();
+            var horizontalLines = lines.Where(x => x.Height / Math.Max(1f, x.Width) < verticalRatio).ToList();
+            return (verticalLines, horizontalLines);
+        }
+
+        private static List<LineBlock> GroupLines(
+            List<LineData> lines,
+            bool isVertical,
+            float horizontalGapMax,
+            float overlapRatio)
+        {
+            if (lines.Count == 0)
+            {
+                return new List<LineBlock>();
+            }
+
+            int n = lines.Count;
+            int[] parent = Enumerable.Range(0, n).ToArray();
+
+            int Find(int x)
+            {
+                while (parent[x] != x)
                 {
-                    continue;
+                    parent[x] = parent[parent[x]];
+                    x = parent[x];
                 }
 
-                validSizeCount++;
-                if (line.Height > line.Width * 1.2f)
+                return x;
+            }
+
+            void Union(int a, int b)
+            {
+                int ra = Find(a);
+                int rb = Find(b);
+                if (ra != rb)
                 {
-                    verticalCount++;
+                    parent[rb] = ra;
                 }
             }
 
-            bool verticalDominant = validSizeCount >= 3 && verticalCount >= (int)Math.Ceiling(validSizeCount * 0.6);
-
-            if (verticalDominant)
+            for (int i = 0; i < n; i++)
             {
-                return lines
-                    .OrderByDescending(x => x.CenterX)
-                    .ThenBy(x => x.CenterY)
-                    .ToArray();
+                for (int j = i + 1; j < n; j++)
+                {
+                    if (AreConnected(lines[i], lines[j], isVertical, horizontalGapMax, overlapRatio))
+                    {
+                        Union(i, j);
+                    }
+                }
             }
 
-            return lines;
+            var groups = new Dictionary<int, List<LineData>>();
+            for (int i = 0; i < n; i++)
+            {
+                int root = Find(i);
+                if (!groups.TryGetValue(root, out var group))
+                {
+                    group = new List<LineData>();
+                    groups[root] = group;
+                }
+
+                group.Add(lines[i]);
+            }
+
+            var blocks = new List<LineBlock>();
+            foreach (var group in groups.Values)
+            {
+                var ordered = group.OrderBy(x => x.Top).ThenBy(x => x.Left).ToList();
+
+                float left = ordered.Min(x => x.Left);
+                float top = ordered.Min(x => x.Top);
+                float right = ordered.Max(x => x.Right);
+                float bottom = ordered.Max(x => x.Bottom);
+
+                blocks.Add(new LineBlock(ordered, left, top, right, bottom));
+            }
+
+            return blocks;
+        }
+
+        private static bool AreConnected(
+            LineData a,
+            LineData b,
+            bool isVertical,
+            float horizontalGapMax,
+            float overlapRatio)
+        {
+            if (isVertical)
+            {
+                // Vertical writing: lines in the same column should overlap on X,
+                // and their distance is measured along Y.
+                float overlapXVertical = Overlap1D(a.Left, a.Right, b.Left, b.Right);
+                float baseWidthVertical = Math.Max(1f, Math.Min(a.Width, b.Width));
+                if ((overlapXVertical / baseWidthVertical) < overlapRatio)
+                {
+                    return false;
+                }
+
+                float gapYVertical = Gap1D(a.Top, a.Bottom, b.Top, b.Bottom);
+                return gapYVertical <= horizontalGapMax;
+            }
+
+            float overlapX = Overlap1D(a.Left, a.Right, b.Left, b.Right);
+            float baseWidth = Math.Max(1f, Math.Min(a.Width, b.Width));
+            if ((overlapX / baseWidth) < overlapRatio)
+            {
+                return false;
+            }
+
+            float gapY = Gap1D(a.Top, a.Bottom, b.Top, b.Bottom);
+            return gapY <= horizontalGapMax;
+        }
+
+        private static float Overlap1D(float a1, float a2, float b1, float b2)
+        {
+            return Math.Max(0f, Math.Min(a2, b2) - Math.Max(a1, b1));
+        }
+
+        private static float Gap1D(float a1, float a2, float b1, float b2)
+        {
+            if (a2 < b1)
+            {
+                return b1 - a2;
+            }
+
+            if (b2 < a1)
+            {
+                return a1 - b2;
+            }
+
+            return 0f;
+        }
+
+        private static float MedianOrDefault(IEnumerable<float> values, float fallback)
+        {
+            float[] arr = values.Where(x => x > 0).OrderBy(x => x).ToArray();
+            if (arr.Length == 0)
+            {
+                return fallback;
+            }
+
+            int m = arr.Length / 2;
+            if (arr.Length % 2 == 1)
+            {
+                return arr[m];
+            }
+
+            return (arr[m - 1] + arr[m]) / 2f;
+        }
+
+        private static List<LineBlock> SortHorizontalBlocksByRows(List<LineBlock> blocks)
+        {
+            if (blocks.Count <= 1)
+            {
+                return blocks
+                    .OrderBy(x => x.Top)
+                    .ThenBy(x => x.Left)
+                    .ToList();
+            }
+
+                // Build table-like rows first, then sort cells left->right inside each row.
+            float medianHeight = MedianOrDefault(blocks.Select(x => x.Bottom - x.Top), 30f);
+            float rowTolerance = Math.Max(8f, medianHeight * 0.45f);
+
+            var sorted = blocks
+                .OrderBy(x => x.Top)
+                .ThenBy(x => x.Left)
+                .ToList();
+
+            var rows = new List<List<LineBlock>>();
+            foreach (var block in sorted)
+            {
+                int bestRowIndex = -1;
+                float bestDistance = float.MaxValue;
+
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    if (!IsSameHorizontalRow(block, rows[i], rowTolerance))
+                    {
+                        continue;
+                    }
+
+                    float rowCenter = (rows[i].Min(x => x.Top) + rows[i].Max(x => x.Bottom)) * 0.5f;
+                    float blockCenter = (block.Top + block.Bottom) * 0.5f;
+                    float distance = Math.Abs(blockCenter - rowCenter);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestRowIndex = i;
+                    }
+                }
+
+                if (bestRowIndex < 0)
+                {
+                    rows.Add(new List<LineBlock> { block });
+                }
+                else
+                {
+                    rows[bestRowIndex].Add(block);
+                }
+            }
+
+            var flattened = rows
+                .OrderBy(r => r.Min(x => x.Top))
+                .ThenBy(r => r.Min(x => x.Left))
+                .SelectMany(r => r.OrderBy(x => x.Left).ThenBy(x => x.Top))
+                .ToList();
+
+            return flattened;
+        }
+
+        private static bool IsSameHorizontalRow(LineBlock block, List<LineBlock> row, float tolerance)
+        {
+            float rowTop = row.Min(x => x.Top);
+            float rowBottom = row.Max(x => x.Bottom);
+            float rowHeight = Math.Max(1f, rowBottom - rowTop);
+
+            float blockHeight = Math.Max(1f, block.Bottom - block.Top);
+            float overlapY = Overlap1D(block.Top, block.Bottom, rowTop, rowBottom);
+            float overlapRatio = overlapY / Math.Max(1f, Math.Min(blockHeight, rowHeight));
+            if (overlapRatio >= 0.2f)
+            {
+                return true;
+            }
+
+            float rowCenter = (rowTop + rowBottom) * 0.5f;
+            float blockCenter = (block.Top + block.Bottom) * 0.5f;
+            return Math.Abs(blockCenter - rowCenter) <= tolerance;
         }
 
         private static string FindSnippingToolPath()
@@ -457,6 +709,28 @@ namespace DesktopCapture
             public float CenterY { get; set; }
             public float Width { get; set; }
             public float Height { get; set; }
+            public float Left { get; set; }
+            public float Top { get; set; }
+            public float Right { get; set; }
+            public float Bottom { get; set; }
+        }
+
+        private sealed class LineBlock
+        {
+            public LineBlock(List<LineData> lines, float left, float top, float right, float bottom)
+            {
+                Lines = lines;
+                Left = left;
+                Top = top;
+                Right = right;
+                Bottom = bottom;
+            }
+
+            public List<LineData> Lines { get; }
+            public float Left { get; }
+            public float Top { get; }
+            public float Right { get; }
+            public float Bottom { get; }
         }
 
         private static class NativeMethods
