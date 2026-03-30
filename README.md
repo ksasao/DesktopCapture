@@ -4,9 +4,9 @@
 キャプチャ画像の OCR を実行し、Markdown 記録へ結果を追記できます。
 
 ## ダウンロード
-
-- [DesktopCapture.1.0.9570.30526.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9570/DesktopCapture.1.0.9570.30526.zip) (x64)
-- [DesktopCapture.1.0.9570.41966_ARM64.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9570/DesktopCapture.1.0.9570.41966_ARM64.zip) (ARM64)
+### 2026/3/29
+- [DesktopCapture.1.0.9584_x64.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9584/DesktopCapture.1.0.9584_x64.zip) (x64)
+- [DesktopCapture.1.0.9584_ARM64.zip](https://github.com/ksasao/DesktopCapture/releases/download/v1.0.9584/DesktopCapture.1.0.9584_ARM64.zip) (ARM64)
 
 ![DesktopCapture Screenshot](docs/screenshot.jpg)
 
@@ -16,6 +16,7 @@
 - **グローバルホットキー**: `Ctrl + Shift + C` でキャプチャが実行されます
 - **メモ書き**: 画像の保存先に memo.md ファイルを自動作成して画像に対するメモを作成できます
 - **OCR**: 「OCR」ボタンで選択したキャプチャ画像の文字認識結果をメモに挿入できます
+- **キャプチャの一部をOCR**: キャプチャ後の画像をマウスで範囲選択するとテキストとして抽出することができます
 
 ## OCR の実装について
 
@@ -57,6 +58,7 @@ Get-AppxPackage -Name Microsoft.ScreenSketch | Select-Object Name, Version, Arch
 4. **記録（Markdown）**
    - 「画像タグを挿入」で最新画像タグを追記
    - 「OCR」で最新画像の OCR 結果を追記
+   - キャプチャ画像の一部をマウスで選択するとその部分をOCR
    - 記録内容は `memo.md` に自動保存
 
 ## ビルド方法
