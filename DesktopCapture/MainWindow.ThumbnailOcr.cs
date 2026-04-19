@@ -109,6 +109,14 @@ namespace DesktopCapture
             });
         }
 
+        /// <summary>
+        /// サムネイル上でユーザーが選択した矩形領域を元画像ピクセル座標へ変換し、
+        /// 当該領域に対して OCR を実行して Markdown エディタへテキストを挿入します。
+        /// </summary>
+        /// <param name="selX">選択矩形の左上 X（キャンバス座標）</param>
+        /// <param name="selY">選択矩形の左上 Y（キャンバス座標）</param>
+        /// <param name="selW">選択矩形の幅（キャンバス座標）</param>
+        /// <param name="selH">選択矩形の高さ（キャンバス座標）</param>
         private void PerformOcrOnThumbnailRegion(double selX, double selY, double selW, double selH)
         {
             if (!_ocrService.IsAvailable)
