@@ -770,3 +770,4 @@ namespace DesktopCapture
         private static extern bool SetDllDirectory(string lpPathName);
     }
 }
+

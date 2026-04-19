@@ -228,10 +228,14 @@ namespace DesktopCapture
                         return;
                     }
 
-                    AppendOcrTextToEditor(captureFileName, recognizedText);
+                    // 選択中テキストがあれば置換、なければカーソル位置へ挿入
+                    string insertText = recognizedText.Trim();
+                    MarkdownEditorTextBox.SelectedText = insertText;
+
                     SaveMemoToCurrentSavePath();
-                    StatusText.Text = $"OCR完了: {recognizedText.Length}文字を検出しました。";
+                    StatusText.Text = $"OCR完了: {insertText.Length}文字を挿入しました。";
                 });
+
             });
         }
     }
